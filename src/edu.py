@@ -1,4 +1,3 @@
-# src/app_full_ui_png.py
 import os, io, math
 import pygame
 import cairo
@@ -11,10 +10,13 @@ os.makedirs(IMG_DIR, exist_ok=True)
 os.makedirs(SOUNDS_DIR, exist_ok=True)
 
 BG_PATH = os.path.join(IMG_DIR, "background.png")
+BG_Menu = os.path.join(IMG_DIR, "backgroundmenu.png")
+BG_WarnaBentuk = os.path.join(IMG_DIR, "bgwarnabentuk.png")
 CHAR_PATH = os.path.join(IMG_DIR, "char.png")
 PLAY_PNG = os.path.join(IMG_DIR, "play.png")
 BACK_PNG = os.path.join(IMG_DIR, "back.png")
-BOX_PNG = os.path.join(IMG_DIR, "box_template.png")
+MENU_COLOR_PNG = os.path.join(IMG_DIR, "4.png")
+MENU_SHAPE_PNG = os.path.join(IMG_DIR, "3.png")
 CARD_PNG = os.path.join(IMG_DIR, "card_template.png")
 ICON_COLOR_PNG = os.path.join(IMG_DIR, "icon_color_template.png")
 ICON_SHAPE_PNG = os.path.join(IMG_DIR, "icon_shape_template.png")
@@ -24,7 +26,7 @@ FALLBACK_BG = "/mnt/data/772bea74-9758-4f21-8423-36d1cff64b0e.jpg"
 FALLBACK_CHAR = "/mnt/data/14578f74-d9f1-446a-90c2-9629d68fa418.jpg"
 
 # ---------------- Window ----------------
-WINDOW_W, WINDOW_H = 900, 600
+WINDOW_W, WINDOW_H = 1280, 720
 pygame.init()
 pygame.mixer.init()
 screen = pygame.display.set_mode((WINDOW_W, WINDOW_H))
@@ -84,22 +86,6 @@ def create_back_png(path, size=96):
     ctx.stroke()
     surf.write_to_png(path)
 
-def create_box_png(path, w=640, h=160):
-    surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
-    ctx = cairo.Context(surf)
-    r = 20
-    ctx.new_sub_path()
-    ctx.arc(w-r, r, r, -math.pi/2, 0)
-    ctx.arc(w-r, h-r, r, 0, math.pi/2)
-    ctx.arc(r, h-r, r, math.pi/2, math.pi)
-    ctx.arc(r, r, r, math.pi, 3*math.pi/2)
-    ctx.close_path()
-    ctx.set_source_rgb(1,1,1)
-    ctx.fill_preserve()
-    ctx.set_line_width(4)
-    ctx.set_source_rgba(0,0,0,0.12)
-    ctx.stroke()
-    surf.write_to_png(path)
 
 def create_card_template_png(path, w=360, h=200):
     surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
@@ -130,21 +116,9 @@ def create_icon_templates(color_path, shape_path, size=72):
     ctx.stroke()
     surf.write_to_png(color_path)
 
-    surf2 = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
-    ctx2 = cairo.Context(surf2)
-    s = size*0.32
-    ctx2.rectangle((size/2 - s), (size/2 - s), s*2, s*2)
-    ctx2.set_source_rgb(0.8,0.8,0.8)
-    ctx2.fill_preserve()
-    ctx2.set_line_width(2)
-    ctx2.set_source_rgba(0,0,0,0.12)
-    ctx2.stroke()
-    surf2.write_to_png(shape_path)
-
 # Auto create PNG defaults if missing
 if not os.path.exists(PLAY_PNG): create_play_png(PLAY_PNG)
 if not os.path.exists(BACK_PNG): create_back_png(BACK_PNG)
-if not os.path.exists(BOX_PNG): create_box_png(BOX_PNG)
 if not os.path.exists(CARD_PNG): create_card_template_png(CARD_PNG)
 if not os.path.exists(ICON_COLOR_PNG) or not os.path.exists(ICON_SHAPE_PNG):
     create_icon_templates(ICON_COLOR_PNG, ICON_SHAPE_PNG)
@@ -162,15 +136,18 @@ def load_img(path, fallback=None, size=None):
     return None
 
 BACKGROUND = load_img(BG_PATH, fallback=FALLBACK_BG, size=(WINDOW_W, WINDOW_H))
+BACKGROUNDMENU = load_img(BG_Menu, fallback=FALLBACK_BG, size=(WINDOW_W, WINDOW_H))
+BACKGROUNDWARNA_BENTUK = load_img(BG_WarnaBentuk, fallback=FALLBACK_BG, size=(WINDOW_W, WINDOW_H))
 CHARACTER = load_img(CHAR_PATH, fallback=FALLBACK_CHAR, size=(260,260))
 BTN_PLAY = load_img(PLAY_PNG, size=(140,140))
 BTN_BACK = load_img(BACK_PNG, size=(64,64))
-BOX_PNG_SURF = load_img(BOX_PNG, size=(640,160))
 CARD_TEMPLATE = load_img(CARD_PNG, size=(360,200))
+MENU_COLOR_SURF = load_img(MENU_COLOR_PNG, size=(450, 450))
+MENU_SHAPE_SURF = load_img(MENU_SHAPE_PNG, size=(440, 380))
 
 # ---------------- Data ----------------
 COLORS = [("Merah",(220,20,60)),("Hijau",(34,139,34)),("Biru",(30,144,255)),("Kuning",(255,215,0))]
-SHAPES = [("Persegi","square"),("Lingkaran","circle"),("Segitiga","triangle")]
+SHAPES = [("Segitiga", "triangle"), ("Kotak", "square"), ("Lingkaran", "circle")]
 
 # Load sounds
 def load_sound(name):
@@ -219,19 +196,115 @@ def render_shape_icon_cairo(kind, size=64):
 
 # ---------------- Build final card surfaces ----------------
 def make_color_card(name, rgb):
-    card = CARD_TEMPLATE.copy()
-    icon = render_color_icon_cairo(rgb, size=96)
-    card.blit(icon, (16, (card.get_height()-96)//2))
-    text = try_font("Comic Sans MS", 22, bold=True).render(name, True, (255,255,255))
-    card.blit(text, (card.get_width()-text.get_width()-20, card.get_height()-text.get_height()-18))
+    # Ukuran card lebih besar & lega
+    w, h = 360, 180
+    radius = 32
+
+    # Buat card dari nol pake Cairo
+    surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
+    ctx = cairo.Context(surf)
+
+    # Pilih warna latar sesuai nama warna
+    if name == "Merah":
+        bg = (1.00, 0.92, 0.92)    # pink muda
+    elif name == "Hijau":
+        bg = (0.92, 1.00, 0.92)    # hijau mint
+    elif name == "Biru":
+        bg = (0.90, 0.96, 1.00)    # biru langit
+    elif name == "Kuning":
+        bg = (1.00, 0.98, 0.85)    # kuning pastel / krem susu
+    else:
+        bg = (0.98, 0.98, 1.00)
+
+    # Gambar card rounded
+    ctx.new_sub_path()
+    ctx.arc(w - radius, radius, radius, -math.pi/2, 0)
+    ctx.arc(w - radius, h - radius, radius, 0, math.pi/2)
+    ctx.arc(radius, h - radius, radius, math.pi/2, math.pi)
+    ctx.arc(radius, radius, radius, math.pi, 3*math.pi/2)
+    ctx.close_path()
+    ctx.set_source_rgb(*bg)
+    ctx.fill_preserve()
+    ctx.set_source_rgba(0, 0, 0, 0.15)
+    ctx.set_line_width(7)
+    ctx.stroke()
+
+    # Gambar lingkaran warna utama (lebih besar)
+    icon_size = 160
+    cx = 70
+    cy = h // 2
+    ctx.arc(cx, cy, icon_size * 0.4, 0, math.pi * 2)
+    ctx.set_source_rgb(rgb[0]/255, rgb[1]/255, rgb[2]/255)
+    ctx.fill_preserve()
+    ctx.set_source_rgba(0, 0, 0, 0.2)
+    ctx.set_line_width(8)
+    ctx.stroke()
+
+    # Ubah ke pygame surface + tambah teks
+    card = cairo_to_pygame(surf)
+    text = pygame.font.SysFont("Comic Sans MS", 56, bold=True).render(name, True, (40, 40, 40))
+    text_rect = text.get_rect(center=(w * 0.68, h // 2))
+    card.blit(text, text_rect)
+
     return card
 
 def make_shape_card(name, kind):
-    card = CARD_TEMPLATE.copy()
-    icon = render_shape_icon_cairo(kind, size=96)
-    card.blit(icon, (16, (card.get_height()-96)//2))
-    text = try_font("Comic Sans MS", 22, bold=True).render(name, True, (40,40,40))
-    card.blit(text, (card.get_width()-text.get_width()-20, card.get_height()-text.get_height()-18))
+    w, h = 360, 180
+    radius = 32
+    surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
+    ctx = cairo.Context(surf)
+
+    # Latar sesuai nama bentuk (bukan warna!)
+    if name == "Segitiga":
+        bg = (0.98, 1.00, 0.92)   # hijau muda
+    elif name == "Kotak":
+        bg = (1.00, 0.95, 0.90)   # peach
+    elif name == "Lingkaran":
+        bg = (0.92, 0.98, 1.00)   # biru muda
+    else:
+        bg = (0.98, 0.98, 1.00)
+
+    # Gambar card rounded
+    ctx.new_sub_path()
+    ctx.arc(w-radius, radius, radius, -math.pi/2, 0)
+    ctx.arc(w-radius, h-radius, radius, 0, math.pi/2)
+    ctx.arc(radius, h-radius, radius, math.pi/2, math.pi)
+    ctx.arc(radius, radius, radius, math.pi, 3*math.pi/2)
+    ctx.close_path()
+    ctx.set_source_rgb(*bg)
+    ctx.fill_preserve()
+    ctx.set_source_rgba(0,0,0,0.15)
+    ctx.set_line_width(7)
+    ctx.stroke()
+
+    # Gambar bentuk besar
+    cx, cy = 80, h//2
+    ctx.set_source_rgb(0.15, 0.55, 0.95)
+    if kind == "circle":
+        ctx.set_source_rgb(1.0, 0.8, 0.1)
+        ctx.arc(cx, cy, 62, 0, math.pi*2)
+    elif kind == "square":
+        ctx.set_source_rgb(1.0, 0.55, 0.0)
+        s = 62
+        ctx.rectangle(cx-s, cy-s, s*2, s*2)
+    else:  # triangle
+        ctx.set_source_rgb(1.0, 0.4, 0.7)
+        s = 68
+        ctx.move_to(cx, cy-s)
+        ctx.line_to(cx-s*1.1, cy+s*0.9)
+        ctx.line_to(cx+s*1.1, cy+s*0.9)
+        ctx.close_path()
+
+    ctx.fill_preserve()
+    ctx.set_source_rgba(0,0,0,0.25)
+    ctx.set_line_width(10)
+    ctx.stroke()
+
+    # TULISAN PAKAI NAME DARI BENTUK (ini yang tadi salah!)
+    card = cairo_to_pygame(surf)
+    text = pygame.font.SysFont("Comic Sans MS", 35, bold=True).render(name, True, (40,40,40))
+    card.blit(text, text.get_rect(center=(w*0.68, h//2)))
+
     return card
 
 # ---------------- Create cards ----------------
@@ -250,18 +323,18 @@ def layout_cards_grid(count, top, cols=2, card_w=360, card_h=200, gap_x=24, gap_
         positions.append(pygame.Rect(x,y,card_w,card_h))
     return positions
 
-color_pos = layout_cards_grid(len(color_cards), top=160)
-shape_pos = layout_cards_grid(len(shape_cards), top=160)
+color_pos = layout_cards_grid(len(color_cards), top=180, cols=2, card_w=360, card_h=180, gap_x=60, gap_y=60)
+shape_pos = layout_cards_grid(len(shape_cards), top=180, cols=2, card_w=360, card_h=180, gap_x=60, gap_y=60)
 
 # ---------------- UI Rects ----------------
 scene = "splash"
-PLAY_RECT = BTN_PLAY.get_rect(center=(WINDOW_W//2, WINDOW_H//2 + 60))
-BOX1_RECT = BOX_PNG_SURF.get_rect(center=(WINDOW_W//2, 220))
-BOX2_RECT = BOX_PNG_SURF.get_rect(center=(WINDOW_W//2, 400))
+PLAY_RECT = BTN_PLAY.get_rect(center=(WINDOW_W//2, WINDOW_H//2 + 126))
+BOX1_RECT = MENU_COLOR_SURF.get_rect(center=(WINDOW_W//2 - 340, 400))
+BOX2_RECT = MENU_SHAPE_SURF.get_rect(center=(WINDOW_W//2 + 340, 435))
 BACK_RECT = BTN_BACK.get_rect(topleft=(12,12))
 
 # Hover scale
-hover_play = hover_box1 = hover_box2 = hover_back = False
+hover_play = hover_box1 = hover_box2 = hover_back = 1.0
 scale_play = scale_back = scale_box1 = scale_box2 = 1.0
 
 # ---------------- Main loop ----------------
@@ -309,15 +382,20 @@ while running:
     def lerp(a,b,t): return a + (b-a)*max(0, min(1,t))
 
     scale_play = lerp(scale_play, 1.06 if hover_play else 1.0, dt*8)
-    scale_box1 = lerp(scale_box1, 1.03 if hover_box1 else 1.0, dt*8)
-    scale_box2 = lerp(scale_box2, 1.03 if hover_box2 else 1.0, dt*8)
+    scale_box1 = lerp(scale_box1, 1.06 if hover_box1 else 1.0, dt*8)
+    scale_box2 = lerp(scale_box2, 1.06 if hover_box2 else 1.0, dt*8)
     scale_back = lerp(scale_back, 1.06 if hover_back else 1.0, dt*8)
 
-    # draw bg
-    if BACKGROUND:
+    # draw bg sesuai scene
+    if scene == "splash":
         screen.blit(BACKGROUND, (0,0))
+
+    elif scene == "mainmenu":
+        screen.blit(BACKGROUNDMENU, (0,0))
+
     else:
-        screen.fill((245,245,255))
+        screen.blit(BACKGROUNDWARNA_BENTUK, (0,0))
+
 
     # character
     if CHARACTER:
@@ -326,19 +404,16 @@ while running:
 
     # scenes
     if scene == "splash":
-        title = FONT_BIG.render("SHAPECO", True, (255,255,255))
-        screen.blit(title, ((WINDOW_W-title.get_width())//2, 80))
+
         surf = pygame.transform.rotozoom(BTN_PLAY, 0, scale_play)
         screen.blit(surf, surf.get_rect(center=PLAY_RECT.center))
 
     elif scene == "mainmenu":
-        header = FONT.render("Pilih Menu", True, (255,255,255))
-        screen.blit(header, ((WINDOW_W-header.get_width())//2, 36))
 
-        surf1 = pygame.transform.rotozoom(BOX_PNG_SURF, 0, scale_box1)
+        surf1 = pygame.transform.rotozoom(MENU_COLOR_SURF, 0, scale_box1)
         screen.blit(surf1, surf1.get_rect(center=BOX1_RECT.center))
 
-        surf2 = pygame.transform.rotozoom(BOX_PNG_SURF, 0, scale_box2)
+        surf2 = pygame.transform.rotozoom(MENU_SHAPE_SURF, 0, scale_box2)
         screen.blit(surf2, surf2.get_rect(center=BOX2_RECT.center))
 
     elif scene == "color":
