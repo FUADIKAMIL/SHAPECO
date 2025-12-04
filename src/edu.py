@@ -19,7 +19,6 @@ MENU_SHAPE_PNG = os.path.join(IMG_DIR, "3.png")
 ICON_COLOR_PNG = os.path.join(IMG_DIR, "icon_color_template.png")
 ICON_SHAPE_PNG = os.path.join(IMG_DIR, "icon_shape_template.png")
 
-# fallback uploaded images available in environment
 FALLBACK_BG = "/mnt/data/772bea74-9758-4f21-8423-36d1cff64b0e.jpg"
 
 # Page
@@ -128,7 +127,7 @@ COLORS = [
     ("Hijau",(34,139,34)),
     ("Tosca",(64,224,208)),
     ("Biru",(30,144,255)),
-    ("Nila",(75,0,130)),
+    ("Putih",(255,255,255)),
     ("Ungu",(138,43,226)),
     ("Pink",(255,105,180)),
     ("Cokelat",(160,82,45)),
@@ -161,6 +160,10 @@ def load_sound(name):
 sound_colors = {n: load_sound(n.lower()) for n,_ in COLORS}
 sound_shapes = {n: load_sound(n.lower()) for n,_ in SHAPES}
 sound_back = load_sound("back")
+sound_start = load_sound("start")
+sound_m_bentuk = load_sound("bentuk")
+sound_m_warna = load_sound("warna")
+sound_welcome = load_sound("welcome")
 
 def play_sound(s):
     if s:
@@ -308,6 +311,7 @@ def draw_shape_in_rect(surface, rect, kind, hover=False):
 
 # Main
 running = True
+play_sound(sound_welcome)
 while running:
     dt = clock.tick(60) / 1000.0
     mx, my = pygame.mouse.get_pos()
@@ -322,17 +326,19 @@ while running:
 
             if scene == "splash":
                 if PLAY_RECT.collidepoint(mx,my):
+                    play_sound(sound_start)
                     scene = "mainmenu"
 
             elif scene == "mainmenu":
                 if BOX1_RECT.collidepoint(mx,my):
+                    play_sound(sound_m_warna)
                     scene = "color"
                 elif BOX2_RECT.collidepoint(mx,my):
+                    play_sound(sound_m_bentuk)
                     scene = "shape"
 
             else:
                 if BACK_RECT.collidepoint(mx,my):
-                    # Ini gajadi soalnya suaraku kalah cepet sama kembalinya
                     play_sound(sound_back)
                     scene = "mainmenu"
 
