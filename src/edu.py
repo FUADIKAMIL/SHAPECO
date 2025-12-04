@@ -242,7 +242,6 @@ def get_star_points(cx, cy, outer_radius, inner_radius, points=5):
         current_angle += angle_step
     return coords
 
-# Lingkaran button buat bentuk
 def draw_color_circle_at_rect(surface, rect, rgb, hover=False):
     cx, cy = rect.center
     radius = rect.width // 2 
@@ -256,7 +255,6 @@ def draw_color_circle_at_rect(surface, rect, rgb, hover=False):
     if hover:
         pygame.draw.circle(surface, (255,255,255), (cx,cy), radius+6, 4)
 
-# Ngisi button tadi
 def draw_shape_in_rect(surface, rect, kind, hover=False):
     cx, cy = rect.center
     radius = rect.width // 2
