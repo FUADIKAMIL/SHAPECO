@@ -3,7 +3,7 @@ import pygame
 import cairo
 import sys
 
-# ---------------- Paths ----------------
+# Path
 IMG_DIR = "assets/images"
 SOUNDS_DIR = "assets/sounds"
 os.makedirs(IMG_DIR, exist_ok=True)
@@ -12,7 +12,6 @@ os.makedirs(SOUNDS_DIR, exist_ok=True)
 BG_PATH = os.path.join(IMG_DIR, "background.png")
 BG_Menu = os.path.join(IMG_DIR, "backgroundmenu.png")
 BG_WarnaBentuk = os.path.join(IMG_DIR, "bgwarnabentuk.png")
-CHAR_PATH = os.path.join(IMG_DIR, "char.png")
 PLAY_PNG = os.path.join(IMG_DIR, "play.png")
 BACK_PNG = os.path.join(IMG_DIR, "back.png")
 MENU_COLOR_PNG = os.path.join(IMG_DIR, "4.png")
@@ -22,9 +21,8 @@ ICON_SHAPE_PNG = os.path.join(IMG_DIR, "icon_shape_template.png")
 
 # fallback uploaded images available in environment
 FALLBACK_BG = "/mnt/data/772bea74-9758-4f21-8423-36d1cff64b0e.jpg"
-FALLBACK_CHAR = "/mnt/data/14578f74-d9f1-446a-90c2-9629d68fa418.jpg"
 
-# ---------------- Window ----------------
+# Page
 WINDOW_W, WINDOW_H = 1280, 720
 pygame.init()
 pygame.mixer.init()
@@ -32,7 +30,7 @@ screen = pygame.display.set_mode((WINDOW_W, WINDOW_H))
 pygame.display.set_caption("SHAPECO")
 clock = pygame.time.Clock()
 
-# Fonts
+# Inisialisasi Font
 def try_font(name, size, bold=False):
     try:
         return pygame.font.SysFont(name, size, bold=bold)
@@ -43,7 +41,7 @@ FONT_BIG = try_font("Comic Sans MS", 64, bold=True)
 FONT = try_font("Comic Sans MS", 28, bold=True)
 SMALL = try_font("Comic Sans MS", 16)
 
-# ---------------- Cairo helpers ----------------
+# Cairo Helper di yutup gini sih hehe
 def cairo_surface_to_png_bytes(surf):
     buf = io.BytesIO()
     surf.write_to_png(buf)
@@ -53,7 +51,7 @@ def cairo_to_pygame(surf):
     b = cairo_surface_to_png_bytes(surf)
     return pygame.image.load(io.BytesIO(b)).convert_alpha()
 
-# ---------------- Default PNG creators ----------------
+# Buat beberapa element
 def create_play_png(path, size=180):
     surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
     ctx = cairo.Context(surf)
@@ -102,7 +100,7 @@ if not os.path.exists(BACK_PNG): create_back_png(BACK_PNG)
 if not os.path.exists(ICON_COLOR_PNG) or not os.path.exists(ICON_SHAPE_PNG):
     create_icon_templates(ICON_COLOR_PNG, ICON_SHAPE_PNG)
 
-# ---------------- Load PNG assets ----------------
+# Load gambar sesuai path
 def load_img(path, fallback=None, size=None):
     if os.path.exists(path):
         im = pygame.image.load(path).convert_alpha()
@@ -117,13 +115,12 @@ def load_img(path, fallback=None, size=None):
 BACKGROUND = load_img(BG_PATH, fallback=FALLBACK_BG, size=(WINDOW_W, WINDOW_H))
 BACKGROUNDMENU = load_img(BG_Menu, fallback=FALLBACK_BG, size=(WINDOW_W, WINDOW_H))
 BACKGROUNDWARNA_BENTUK = load_img(BG_WarnaBentuk, fallback=FALLBACK_BG, size=(WINDOW_W, WINDOW_H))
-CHARACTER = load_img(CHAR_PATH, fallback=FALLBACK_CHAR, size=(260,260))
 BTN_PLAY = load_img(PLAY_PNG, size=(140,140))
 BTN_BACK = load_img(BACK_PNG, size=(64,64))
 MENU_COLOR_SURF = load_img(MENU_COLOR_PNG, size=(450, 450))
 MENU_SHAPE_SURF = load_img(MENU_SHAPE_PNG, size=(440, 380))
 
-# ---------------- Data ----------------
+# Data mainan kita hehehe
 COLORS = [
     ("Merah",(220,20,60)),
     ("Oranye",(255,140,0)),
@@ -139,7 +136,6 @@ COLORS = [
     ("Hitam",(20,20,20)),
 ]
 
-# 9 BENTUK
 SHAPES = [
     ("Lingkaran", "circle"),
     ("Kotak", "square"),
@@ -152,10 +148,10 @@ SHAPES = [
     ("Tambah", "plus")
 ]
 
-# Load sounds
+# Mas mas sound
 def load_sound(name):
     base = os.path.join(SOUNDS_DIR, name)
-    for ext in ("wav","ogg","mp3"):
+    for ext in ("wav","ogg","mp3", "m4a"):
         p = f"{base}.{ext}"
         if os.path.exists(p):
             try: return pygame.mixer.Sound(p)
@@ -164,19 +160,17 @@ def load_sound(name):
 
 sound_colors = {n: load_sound(n.lower()) for n,_ in COLORS}
 sound_shapes = {n: load_sound(n.lower()) for n,_ in SHAPES}
+sound_back = load_sound("back")
 
 def play_sound(s):
     if s:
         try: s.play()
         except: pass
 
-# ---------------- Layout Functions (GRID MODE) ----------------
-
-# Fungsi Layout Grid yang Rapi dan Terpusat
+# Bikin layout grid buat warna dan bentuk, soalnya kalo niru ref app kita jadi jeleq
 def layout_grid_centered(count, cols, item_size, gap_x, gap_y, start_y):
     positions = []
-    
-    # Hitung lebar total grid agar bisa ditengahin
+
     total_grid_w = cols * item_size + (cols - 1) * gap_x
     start_x = (WINDOW_W - total_grid_w) // 2
     
@@ -191,10 +185,7 @@ def layout_grid_centered(count, cols, item_size, gap_x, gap_y, start_y):
         
     return positions
 
-# --- GENERATE POSITIONS ---
-
-# 1. WARNA: 12 Item. Format 4 Kolom x 3 Baris.
-# Ukuran item 150px, Jarak 40px.
+# Ini punya warna
 color_pos = layout_grid_centered(
     count=len(COLORS), 
     cols=4, 
@@ -204,8 +195,7 @@ color_pos = layout_grid_centered(
     start_y=130
 )
 
-# 2. BENTUK: 9 Item. Format 3 Kolom x 3 Baris.
-# Ukuran item 160px (sedikit lebih besar karena jumlahnya sedikit), Jarak 50px.
+# Ini punya bentuk
 shape_pos = layout_grid_centered(
     count=len(SHAPES), 
     cols=3, 
@@ -216,18 +206,17 @@ shape_pos = layout_grid_centered(
 )
 
 
-# ---------------- UI Rects ----------------
+# Main yuai-yuaian
 scene = "splash"
 PLAY_RECT = BTN_PLAY.get_rect(center=(WINDOW_W//2, WINDOW_H//2 + 126))
 BOX1_RECT = MENU_COLOR_SURF.get_rect(center=(WINDOW_W//2 - 340, 400))
 BOX2_RECT = MENU_SHAPE_SURF.get_rect(center=(WINDOW_W//2 + 340, 435))
 BACK_RECT = BTN_BACK.get_rect(topleft=(12,12))
 
-# Hover scale
 hover_play = hover_box1 = hover_box2 = hover_back = 1.0
 scale_play = scale_back = scale_box1 = scale_box2 = 1.0
 
-# ---------------- Helper Geometry Functions ----------------
+# bikin segi-segian
 def get_polygon_points(cx, cy, radius, sides, angle_offset=0):
     points = []
     for i in range(sides):
@@ -237,10 +226,11 @@ def get_polygon_points(cx, cy, radius, sides, angle_offset=0):
         points.append((x, y))
     return points
 
+# Bikin bintang
 def get_star_points(cx, cy, outer_radius, inner_radius, points=5):
     coords = []
     angle_step = math.pi / points
-    current_angle = -math.pi / 2 # start pointing up
+    current_angle = -math.pi / 2
     for i in range(points * 2):
         r = outer_radius if i % 2 == 0 else inner_radius
         x = cx + r * math.cos(current_angle)
@@ -249,35 +239,29 @@ def get_star_points(cx, cy, outer_radius, inner_radius, points=5):
         current_angle += angle_step
     return coords
 
-# ---------------- Helper draw functions ----------------
+# Lingkaran button buat bentuk
 def draw_color_circle_at_rect(surface, rect, rgb, hover=False):
     cx, cy = rect.center
     radius = rect.width // 2 
     
-    # Bayangan tipis biar rapi
     pygame.draw.circle(surface, (0,0,0,50), (cx+3, cy+3), radius)
     
-    # Lingkaran Utama
     pygame.draw.circle(surface, rgb, (cx, cy), radius)
     
-    # Outline putih halus
     pygame.draw.circle(surface, (255,255,255), (cx, cy), radius, 2)
 
     if hover:
         pygame.draw.circle(surface, (255,255,255), (cx,cy), radius+6, 4)
 
+# Ngisi button tadi
 def draw_shape_in_rect(surface, rect, kind, hover=False):
     cx, cy = rect.center
-    # Radius dasar (lingkaran putih)
     radius = rect.width // 2
     
-    # Bayangan
     pygame.draw.circle(surface, (0,0,0,50), (cx+3, cy+3), radius)
 
-    # Background lingkaran putih
     pygame.draw.circle(surface, (255,255,255), (cx, cy), radius)
     
-    # Radius untuk menggambar bentuk di dalamnya
     draw_radius = radius - 25
     
     if kind == "circle":
@@ -319,11 +303,10 @@ def draw_shape_in_rect(surface, rect, kind, hover=False):
         pygame.draw.rect(surface, (50,50,50), (cx - l/2, cy - th/2, l, th))
         pygame.draw.rect(surface, (50,50,50), (cx - th/2, cy - l/2, th, l))
     
-    # Hover outline
     if hover:
         pygame.draw.circle(surface, (255,255,255), (cx,cy), radius+8, 4)
 
-# ---------------- Main loop ----------------
+# Main
 running = True
 while running:
     dt = clock.tick(60) / 1000.0
@@ -349,6 +332,8 @@ while running:
 
             else:
                 if BACK_RECT.collidepoint(mx,my):
+                    # Ini gajadi soalnya suaraku kalah cepet sama kembalinya
+                    play_sound(sound_back)
                     scene = "mainmenu"
 
                 if scene == "color":
@@ -361,11 +346,12 @@ while running:
                         if rect.collidepoint(mx,my):
                             play_sound(sound_shapes.get(name))
 
-    # hover state
     hover_play = PLAY_RECT.collidepoint(mx,my) and scene=="splash"
     hover_box1 = BOX1_RECT.collidepoint(mx,my) and scene=="mainmenu"
     hover_box2 = BOX2_RECT.collidepoint(mx,my) and scene=="mainmenu"
     hover_back = BACK_RECT.collidepoint(mx,my) and scene not in ("splash","mainmenu")
+
+    # Ini unik tapi ga segitunya paham intinya bikin interpolation biar smooth pas hover kalo di css ngatur waktunya gitu
 
     def lerp(a,b,t): return a + (b-a)*max(0, min(1,t))
 
@@ -374,7 +360,6 @@ while running:
     scale_box2 = lerp(scale_box2, 1.06 if hover_box2 else 1.0, dt*8)
     scale_back = lerp(scale_back, 1.06 if hover_back else 1.0, dt*8)
 
-    # draw bg sesuai scene
     if scene == "splash":
         if BACKGROUND: screen.blit(BACKGROUND, (0,0))
         else: screen.fill((30,30,40))
@@ -387,13 +372,6 @@ while running:
         if BACKGROUNDWARNA_BENTUK: screen.blit(BACKGROUNDWARNA_BENTUK, (0,0))
         else: screen.fill((45,45,60))
 
-
-    # character
-    if CHARACTER:
-        cw,ch = CHARACTER.get_size()
-        screen.blit(CHARACTER, (12, WINDOW_H - ch - 12))
-
-    # scenes
     if scene == "splash":
         surf = pygame.transform.rotozoom(BTN_PLAY, 0, scale_play) if BTN_PLAY else None
         if surf:
@@ -413,7 +391,6 @@ while running:
         if surf: screen.blit(surf, BACK_RECT)
         screen.blit(FONT.render("Menu Warna", True, (40,40,40)), (82,18))
 
-        # draw colors
         for (name,rgb),rect in zip(COLORS, color_pos):
             hover = rect.collidepoint(mx,my)
             draw_color_circle_at_rect(screen, rect, rgb, hover=hover)
@@ -423,14 +400,9 @@ while running:
         if surf: screen.blit(surf, BACK_RECT)
         screen.blit(FONT.render("Menu Bentuk", True, (40,40,40)), (82,18))
 
-        # draw shapes
         for (name,kind),rect in zip(SHAPES, shape_pos):
             hover = rect.collidepoint(mx,my)
             draw_shape_in_rect(screen, rect, kind, hover=hover)
-
-    # footer
-    foot = SMALL.render("EduApp • SHAPECO", True, (100,100,120))
-    screen.blit(foot, (WINDOW_W-foot.get_width()-12, WINDOW_H-22))
 
     pygame.display.flip()
 
